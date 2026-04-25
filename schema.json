@@ -1,0 +1,628 @@
+{
+  "schema_metadata": {
+    "phase": "MVP",
+    "author": "Mohamed Y. / BridgeComm Platform Team",
+    "status": "active",
+    "version": "1.0.0",
+    "description": "Universal product data schema that serves as the intermediary format between brand source data and retailer-specific outputs. Enables N+M scaling by providing a single canonical representation.",
+    "schema_name": "BridgeComm Canonical Product Data Model",
+    "change_control": {
+      "approvers": [
+        "Mohamed Y.",
+        "Rej",
+        "Sitesh"
+      ],
+      "approval_required": true,
+      "notification_channels": [
+        "dev_team",
+        "ops_team"
+      ],
+      "breaking_change_policy": "Major version increment required for field removals or type changes"
+    },
+    "effective_date": "2026-04-26"
+  },
+  "version_history": [
+    {
+      "date": "2026-04-26",
+      "changes": [
+        "Initial canonical schema for Phase 1 MVP",
+        "Core product identification and descriptive fields",
+        "Support for grocery, apparel, pharma, footwear categories",
+        "AI enrichment metadata structure",
+        "Extensibility hooks for Phase 2/3 semantic attributes"
+      ],
+      "version": "1.0.0",
+      "backward_compatible": true
+    }
+  ],
+  "field_definitions": {
+    "media_assets": {
+      "fields": {
+        "video_url": {
+          "type": "string",
+          "format": "uri",
+          "source": "brand_provided",
+          "example": "https://youtube.com/watch?v=example",
+          "mutable": true,
+          "required": false,
+          "max_length": 500,
+          "description": "URL to product video"
+        },
+        "additional_images": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uri",
+            "max_length": 500
+          },
+          "source": "brand_provided",
+          "example": [
+            "https://cdn.acmeorganics.com/products/coffee-001-angle2.jpg",
+            "https://cdn.acmeorganics.com/products/coffee-001-lifestyle.jpg"
+          ],
+          "mutable": true,
+          "required": false,
+          "max_items": 10,
+          "description": "Array of additional product image URLs"
+        },
+        "primary_image_url": {
+          "type": "string",
+          "format": "uri",
+          "source": "brand_provided",
+          "example": "https://cdn.acmeorganics.com/products/coffee-001.jpg",
+          "mutable": true,
+          "required": false,
+          "max_length": 500,
+          "validation": {
+            "url_accessible": true,
+            "allowed_extensions": [
+              "jpg",
+              "jpeg",
+              "png",
+              "gif",
+              "webp"
+            ]
+          },
+          "description": "URL to primary product image"
+        }
+      },
+      "description": "Images, videos, and other media"
+    },
+    "pricing_inventory": {
+      "fields": {
+        "cost": {
+          "type": "decimal",
+          "notes": "Sensitive field - may have access restrictions",
+          "scale": 2,
+          "source": "brand_provided",
+          "example": 9.99,
+          "mutable": true,
+          "required": false,
+          "precision": 10,
+          "description": "Cost to retailer (wholesale price)"
+        },
+        "msrp": {
+          "type": "decimal",
+          "scale": 2,
+          "source": "brand_provided",
+          "example": 19.99,
+          "mutable": true,
+          "required": false,
+          "precision": 10,
+          "description": "Manufacturer's Suggested Retail Price"
+        },
+        "price": {
+          "type": "decimal",
+          "notes": "Currency conversion not supported in Phase 1 - USD only",
+          "scale": 2,
+          "source": "brand_provided",
+          "example": 14.99,
+          "mutable": true,
+          "indexing": {
+            "range_indexed": true
+          },
+          "required": true,
+          "max_value": 999999.99,
+          "min_value": 0.01,
+          "precision": 10,
+          "description": "Base retail price in USD"
+        },
+        "quantity_available": {
+          "type": "integer",
+          "notes": "Not used in Phase 1 - reserved for Phase 2 inventory sync",
+          "source": "brand_provided",
+          "example": 500,
+          "mutable": true,
+          "required": false,
+          "min_value": 0,
+          "description": "Current inventory quantity available"
+        }
+      },
+      "description": "Pricing and inventory information"
+    },
+    "brand_manufacturer": {
+      "fields": {
+        "brand_name": {
+          "type": "string",
+          "source": "brand_provided",
+          "example": "ACME Organics",
+          "mutable": true,
+          "indexing": {
+            "search_indexed": true
+          },
+          "required": true,
+          "max_length": 100,
+          "description": "Official brand name"
+        },
+        "manufacturer": {
+          "type": "string",
+          "source": "brand_provided",
+          "example": "ACME Manufacturing Inc.",
+          "mutable": true,
+          "required": false,
+          "max_length": 200,
+          "description": "Manufacturer name (may differ from brand)"
+        },
+        "manufacturer_part_number": {
+          "type": "string",
+          "source": "brand_provided",
+          "example": "MFG-2024-001",
+          "mutable": true,
+          "required": false,
+          "max_length": 100,
+          "description": "Manufacturer's internal part number"
+        }
+      },
+      "description": "Brand and manufacturer information"
+    },
+    "descriptive_fields": {
+      "fields": {
+        "keywords": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "max_length": 50
+          },
+          "source": "brand_provided_or_ai_generated",
+          "example": [
+            "organic",
+            "coffee",
+            "fair-trade",
+            "medium-roast",
+            "beans"
+          ],
+          "mutable": true,
+          "required": false,
+          "max_items": 20,
+          "description": "Search keywords and tags",
+          "ai_enrichment": {
+            "enrichable": true,
+            "confidence_required": 0.7
+          }
+        },
+        "key_features": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "max_length": 200
+          },
+          "source": "brand_provided_or_ai_extracted",
+          "example": [
+            "100% organic certified",
+            "Fair trade sourced",
+            "Medium roast",
+            "Rich aroma"
+          ],
+          "mutable": true,
+          "required": false,
+          "max_items": 10,
+          "description": "Bullet-point list of key product features",
+          "ai_enrichment": {
+            "enrichable": true,
+            "confidence_required": 0.7
+          }
+        },
+        "product_name": {
+          "type": "string",
+          "notes": "May need truncation for specific retailer constraints",
+          "source": "brand_provided",
+          "example": "Organic Fair Trade Coffee Beans - Medium Roast",
+          "mutable": true,
+          "indexing": {
+            "full_text_search": true
+          },
+          "required": true,
+          "max_length": 200,
+          "min_length": 3,
+          "description": "Primary product name/title"
+        },
+        "long_description": {
+          "type": "string",
+          "source": "brand_provided_or_ai_generated",
+          "example": "Our organic fair trade coffee beans are carefully selected from sustainable farms...",
+          "mutable": true,
+          "required": false,
+          "max_length": 5000,
+          "description": "Detailed product description for product detail pages",
+          "ai_enrichment": {
+            "enrichable": true,
+            "confidence_field": "long_description_confidence",
+            "confidence_required": 0.75
+          }
+        },
+        "short_description": {
+          "type": "string",
+          "source": "brand_provided_or_ai_generated",
+          "example": "Premium organic coffee beans, medium roast, sourced from fair trade farms",
+          "mutable": true,
+          "required": false,
+          "max_length": 500,
+          "description": "Brief product description for listing pages",
+          "ai_enrichment": {
+            "enrichable": true,
+            "confidence_field": "short_description_confidence",
+            "confidence_required": 0.8
+          }
+        }
+      },
+      "description": "Fields that describe the product to customers"
+    },
+    "core_identification": {
+      "fields": {
+        "mpn": {
+          "type": "string",
+          "source": "brand_provided",
+          "example": "MPN-WGT-001",
+          "mutable": true,
+          "required": false,
+          "max_length": 100,
+          "description": "Manufacturer Part Number"
+        },
+        "upc": {
+          "type": "string",
+          "notes": "Required by most retailers but may not be available for all brand products at intake",
+          "source": "brand_provided",
+          "example": "012345678905",
+          "mutable": true,
+          "pattern": "^[0-9]{12,14}$",
+          "indexing": {
+            "search_indexed": true,
+            "unique_preferred": true
+          },
+          "required": false,
+          "description": "Universal Product Code (UPC-A: 12 digits, EAN-13: 13 digits, EAN-14: 14 digits)"
+        },
+        "gtin": {
+          "type": "string",
+          "notes": "Alternative to UPC, used by some retailers like Walmart",
+          "source": "brand_provided",
+          "example": "00012345678905",
+          "mutable": true,
+          "pattern": "^[0-9]{8,14}$",
+          "required": false,
+          "description": "Global Trade Item Number (GTIN-8, GTIN-12, GTIN-13, or GTIN-14)"
+        },
+        "sku_id": {
+          "type": "string",
+          "source": "brand_provided",
+          "unique": true,
+          "example": "ACME-WIDGET-001",
+          "mutable": false,
+          "indexing": {
+            "primary_key": true,
+            "search_indexed": true
+          },
+          "required": true,
+          "max_length": 100,
+          "description": "Brand's unique product identifier (SKU). Must be unique within brand.",
+          "validation_rules": [
+            "BR_SKU_001"
+          ]
+        },
+        "brand_id": {
+          "type": "string",
+          "source": "system_generated",
+          "example": "BRAND_12345",
+          "mutable": false,
+          "indexing": {
+            "foreign_key": "brands.brand_id",
+            "search_indexed": true
+          },
+          "required": true,
+          "max_length": 50,
+          "description": "Internal BridgeComm brand identifier"
+        },
+        "category": {
+          "enum": [
+            "grocery",
+            "apparel",
+            "pharma",
+            "footwear"
+          ],
+          "type": "string",
+          "source": "brand_provided_or_ai_classified",
+          "example": "grocery",
+          "mutable": true,
+          "indexing": {
+            "search_indexed": true
+          },
+          "required": true,
+          "description": "Primary product category (Phase 1 supports 4 categories)",
+          "ai_enrichment": {
+            "enrichable": true,
+            "confidence_field": "category_confidence",
+            "confidence_required": 0.85
+          }
+        },
+        "product_id": {
+          "type": "string",
+          "source": "system_generated",
+          "unique": true,
+          "example": "BRAND_12345::ACME-WIDGET-001",
+          "mutable": false,
+          "indexing": {
+            "primary_key": true,
+            "unique_constraint": true
+          },
+          "required": true,
+          "max_length": 100,
+          "description": "Internal BridgeComm universal product identifier (combination of brand_id + sku_id)"
+        },
+        "subcategory": {
+          "type": "string",
+          "source": "brand_provided_or_ai_classified",
+          "example": "Beverages",
+          "mutable": true,
+          "required": false,
+          "max_length": 100,
+          "description": "Product subcategory (e.g., 'Beverages', 'Men's Shirts')",
+          "ai_enrichment": {
+            "enrichable": true,
+            "confidence_required": 0.75
+          }
+        }
+      },
+      "description": "Fields that uniquely identify and classify the product"
+    },
+    "physical_attributes": {
+      "fields": {
+        "size": {
+          "type": "string",
+          "source": "brand_provided",
+          "example": "Medium",
+          "mutable": true,
+          "required": false,
+          "max_length": 20,
+          "description": "Product size (relevant for apparel, footwear)",
+          "category_specific": [
+            "apparel",
+            "footwear"
+          ]
+        },
+        "color": {
+          "type": "string",
+          "source": "brand_provided",
+          "example": "Navy Blue",
+          "mutable": true,
+          "required": false,
+          "max_length": 50,
+          "description": "Product color (relevant for apparel, footwear)",
+          "category_specific": [
+            "apparel",
+            "footwear"
+          ]
+        },
+        "material": {
+          "type": "string",
+          "source": "brand_provided",
+          "example": "100% Organic Cotton",
+          "mutable": true,
+          "required": false,
+          "max_length": 200,
+          "description": "Primary material composition"
+        },
+        "weight_oz": {
+          "type": "decimal",
+          "notes": "Most retailers require shipping weight - flagged if missing",
+          "scale": 2,
+          "source": "brand_provided",
+          "example": 16.5,
+          "mutable": true,
+          "required": false,
+          "min_value": 0.01,
+          "precision": 10,
+          "description": "Product weight in ounces"
+        },
+        "dimensions": {
+          "type": "object",
+          "source": "brand_provided",
+          "mutable": true,
+          "required": false,
+          "properties": {
+            "unit": {
+              "enum": [
+                "in",
+                "cm"
+              ],
+              "type": "string",
+              "example": "in",
+              "description": "Unit of measurement"
+            },
+            "width": {
+              "type": "decimal",
+              "scale": 2,
+              "example": 6,
+              "precision": 10,
+              "description": "Width in inches"
+            },
+            "height": {
+              "type": "decimal",
+              "scale": 2,
+              "example": 3,
+              "precision": 10,
+              "description": "Height in inches"
+            },
+            "length": {
+              "type": "decimal",
+              "scale": 2,
+              "example": 8.5,
+              "precision": 10,
+              "description": "Length in inches"
+            }
+          },
+          "description": "Product dimensions"
+        },
+        "weight_unit": {
+          "enum": [
+            "oz",
+            "lb",
+            "g",
+            "kg"
+          ],
+          "type": "string",
+          "notes": "Will be converted to retailer's required unit",
+          "source": "brand_provided",
+          "example": "oz",
+          "mutable": true,
+          "required": false,
+          "description": "Unit of weight measurement"
+        },
+        "package_quantity": {
+          "type": "integer",
+          "source": "brand_provided",
+          "example": 6,
+          "mutable": true,
+          "required": false,
+          "min_value": 1,
+          "description": "Number of units in package (for multi-packs)"
+        }
+      },
+      "description": "Physical characteristics and shipping information"
+    },
+    "ai_enrichment_metadata": {
+      "fields": {
+        "needs_review": {
+          "type": "boolean",
+          "source": "system_generated",
+          "example": false,
+          "mutable": true,
+          "required": false,
+          "description": "Flag indicating if product requires human review (confidence < 0.90)"
+        },
+        "review_status": {
+          "enum": [
+            "pending",
+            "in_review",
+            "approved",
+            "rejected"
+          ],
+          "type": "string",
+          "source": "operator_provided",
+          "example": "approved",
+          "mutable": true,
+          "required": false,
+          "description": "Human review status"
+        },
+        "enrichment_model": {
+          "type": "string",
+          "source": "system_generated",
+          "example": "claude-sonnet-4-20250514",
+          "mutable": true,
+          "required": false,
+          "max_length": 100,
+          "description": "AI model used for enrichment"
+        },
+        "confidence_scores": {
+          "type": "object",
+          "notes": "Only includes scores for fields that were AI-enriched",
+          "source": "system_generated",
+          "mutable": true,
+          "required": false,
+          "properties": {
+            "category_confidence": {
+              "type": "decimal",
+              "scale": 2,
+              "example": 0.92,
+              "max_value": 1,
+              "min_value": 0,
+              "precision": 3,
+              "description": "Confidence in category classification"
+            },
+            "long_description_confidence": {
+              "type": "decimal",
+              "scale": 2,
+              "example": 0.85,
+              "precision": 3,
+              "description": "Confidence in generated long description"
+            },
+            "short_description_confidence": {
+              "type": "decimal",
+              "scale": 2,
+              "example": 0.87,
+              "precision": 3,
+              "description": "Confidence in generated short description"
+            }
+          },
+          "description": "Confidence scores for AI-enriched fields"
+        },
+        "overall_confidence": {
+          "type": "decimal",
+          "scale": 2,
+          "source": "system_generated",
+          "example": 0.88,
+          "mutable": true,
+          "required": false,
+          "max_value": 1,
+          "min_value": 0,
+          "precision": 3,
+          "description": "Average confidence across all AI-enriched fields"
+        },
+        "enrichment_timestamp": {
+          "type": "datetime",
+          "source": "system_generated",
+          "example": "2025-12-15T14:30:00Z",
+          "mutable": true,
+          "required": false,
+          "description": "When AI enrichment was last performed"
+        }
+      },
+      "description": "Metadata about AI-enhanced fields and confidence scores"
+    },
+    "compliance_certifications": {
+      "fields": {
+        "warnings": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "max_length": 500
+          },
+          "source": "brand_provided",
+          "example": [
+            "May contain traces of tree nuts"
+          ],
+          "mutable": true,
+          "required": false,
+          "max_items": 5,
+          "description": "Product warnings (e.g., 'Contains nuts', 'Choking hazard')"
+        },
+        "certifications": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "max_length": 100
+          },
+          "source": "brand_provided",
+          "example": [
+            "USDA Organic",
+            "Fair Trade Certified"
+          ],
+          "mutable": true,
+          "required": false,
+          "max_items": 10,
+          "description": "Product certifications (e.g., 'USDA Organic', 'Fair Trade', 'FDA Approved')"
+        }
+      },
+      "description": "Regulatory compliance and certifications (Phase 1: basic support)"
+    }
+  }
+}
